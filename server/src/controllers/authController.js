@@ -14,7 +14,7 @@ const generateToken = (userId) => {
 // @access Public
 const register = async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        let { name, email, password } = req.body;
 
         if (!name || !email || !password) {
             return res.status(400).json({
@@ -22,6 +22,9 @@ const register = async (req, res) => {
                 message: "All fields are required",
             });
         }
+
+        name = name.trim();
+        email = email.toLowerCase().trim();
 
         const user = await User.create({
             name,
@@ -44,13 +47,23 @@ const register = async (req, res) => {
 
     } catch (error) {
 
-        // Duplicate email
         if (error.code === 11000) {
             return res.status(409).json({
                 success: false,
                 message: "Email already in use",
             });
         }
+
+        if (error.name === "ValidationError") {
+            const firstError = Object.values(error.errors)[0].message;
+
+            return res.status(400).json({
+                success: false,
+                message: firstError,
+            });
+        }
+
+        console.error(error);
 
         return res.status(500).json({
             success: false,
@@ -63,10 +76,8 @@ const register = async (req, res) => {
 // @route POST /api/auth/login
 // @access Public
 const login = async (req, res) => {
-
     try {
-
-        const { email, password } = req.body;
+        let { email, password } = req.body;
 
         if (!email || !password) {
             return res.status(400).json({
@@ -74,6 +85,8 @@ const login = async (req, res) => {
                 message: "Email and password are required",
             });
         }
+
+        email = email.toLowerCase().trim();
 
         const user = await User.findOne({ email }).select("+password");
 
@@ -108,11 +121,12 @@ const login = async (req, res) => {
 
     } catch (error) {
 
+        console.error(error);
+
         return res.status(500).json({
             success: false,
             message: "Internal Server Error",
         });
-
     }
 };
 
