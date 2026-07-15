@@ -1,0 +1,247 @@
+const JournalEntry = require("../models/JournalEntry");
+
+// @desc    Create Journal Entry
+// @route   POST /api/journals
+// @access  Private
+const createEntry = async (req, res) => {
+    try {
+        let { content } = req.body;
+
+        // Validate input
+        if (typeof content !== "string") {
+            return res.status(400).json({
+                success: false,
+                message: "Journal content is required",
+            });
+        }
+
+        content = content.trim();
+
+        if (content.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Journal content cannot be empty",
+            });
+        }
+
+        const entry = await JournalEntry.create({
+            userId: req.user._id,
+            content,
+        });
+
+        return res.status(201).json({
+            success: true,
+            message: "Journal created successfully",
+            entry,
+        });
+
+    } catch (error) {
+
+        if (error.name === "ValidationError") {
+            const firstError = Object.values(error.errors)[0].message;
+
+            return res.status(400).json({
+                success: false,
+                message: firstError,
+            });
+        }
+
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+    }
+};
+
+// @desc    Get All Journal Entries
+// @route   GET /api/journals
+// @access  Private
+const getEntries = async (req, res) => {
+    try {
+
+        const entries = await JournalEntry.find({
+            userId: req.user._id,
+        }).sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            success: true,
+            count: entries.length,
+            entries,
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+    }
+};
+
+// @desc    Get Single Journal Entry
+// @route   GET /api/journals/:id
+// @access  Private
+const getEntryById = async (req, res) => {
+    try {
+
+        const entry = await JournalEntry.findOne({
+            _id: req.params.id,
+            userId: req.user._id,
+        });
+
+        if (!entry) {
+            return res.status(404).json({
+                success: false,
+                message: "Journal entry not found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            entry,
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+    }
+};
+
+// @desc    Update Journal Entry
+// @route   PUT /api/journals/:id
+// @access  Private
+const updateEntry = async (req, res) => {
+    try {
+
+        let { content } = req.body;
+
+        // Reject empty request body
+        if (content === undefined) {
+            return res.status(400).json({
+                success: false,
+                message: "Journal content is required",
+            });
+        }
+
+        // Reject non-string values
+        if (typeof content !== "string") {
+            return res.status(400).json({
+                success: false,
+                message: "Journal content must be a string",
+            });
+        }
+
+        content = content.trim();
+
+        if (content.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Journal content cannot be empty",
+            });
+        }
+
+        const entry = await JournalEntry.findOne({
+            _id: req.params.id,
+            userId: req.user._id,
+        });
+
+        if (!entry) {
+            return res.status(404).json({
+                success: false,
+                message: "Journal entry not found",
+            });
+        }
+
+        entry.content = content;
+
+        // Reset AI reflection after content update
+        entry.reflection = {
+            status: "pending",
+            summary: "",
+            emotions: [],
+            reflectionQuestions: [],
+            positiveObservation: "",
+            suggestion: "",
+            generatedAt: null,
+        };
+
+        await entry.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Journal updated successfully",
+            entry,
+        });
+
+    } catch (error) {
+
+        if (error.name === "ValidationError") {
+            const firstError = Object.values(error.errors)[0].message;
+
+            return res.status(400).json({
+                success: false,
+                message: firstError,
+            });
+        }
+
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+    }
+};
+
+// @desc    Delete Journal Entry
+// @route   DELETE /api/journals/:id
+// @access  Private
+const deleteEntry = async (req, res) => {
+    try {
+
+        const entry = await JournalEntry.findOne({
+            _id: req.params.id,
+            userId: req.user._id,
+        });
+
+        if (!entry) {
+            return res.status(404).json({
+                success: false,
+                message: "Journal entry not found",
+            });
+        }
+
+        await entry.deleteOne();
+
+        return res.status(200).json({
+            success: true,
+            message: "Journal deleted successfully",
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+    }
+};
+
+module.exports = {
+    createEntry,
+    getEntries,
+    getEntryById,
+    updateEntry,
+    deleteEntry,
+};
