@@ -4,9 +4,7 @@ const JournalEntry = require("../models/JournalEntry");
 // @desc    Create Journal Entry
 // @route   POST /api/journals
 // @access  Private
-// @desc    Create Journal Entry
-// @route   POST /api/journals
-// @access  Private
+
 const createEntry = async (req, res) => {
     try {
         let { content } = req.body;
@@ -352,11 +350,80 @@ const deleteEntry = async (req, res) => {
     }
 };
 
+// @desc    Search Journal Entries
+// @route   GET /api/journals/search?q=<term>
+// @access  Private
+const getSearchResults = async (req, res) => {
+    try {
+
+        let { q } = req.query;
+
+        if (typeof q !== "string") {
+            return res.status(400).json({
+                success: false,
+                message: "Search query is required",
+            });
+        }
+
+        q = q.trim();
+
+        if (q.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Search query cannot be empty",
+            });
+        }
+
+        if (q.length < 2) {
+            return res.status(400).json({
+                success: false,
+                message: "Search query must be at least 2 characters",
+            });
+        }
+
+        const entries = await JournalEntry.find(
+            {
+                userId: req.user._id,
+                $text: {
+                    $search: q,
+                },
+            },
+            {
+                score: {
+                    $meta: "textScore",
+                },
+            }
+        )
+            .sort({
+                score: {
+                    $meta: "textScore",
+                },
+            })
+            .select("content createdAt reflection.status");
+
+        return res.status(200).json({
+            success: true,
+            count: entries.length,
+            entries,
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+    }
+};
+
 module.exports = {
     createEntry,
     getEntries,
     getEntryById,
     updateEntry,
-    retryReflection,
     deleteEntry,
+    retryReflection,
+    getSearchResults,
 };

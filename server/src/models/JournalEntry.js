@@ -59,5 +59,10 @@ const journalEntrySchema = new mongoose.Schema(
         timestamps: true,
     }
 );
+journalEntrySchema.index({
+    userId: 1,
+    content: "text",
+});
+
 
 module.exports = mongoose.model("JournalEntry", journalEntrySchema);

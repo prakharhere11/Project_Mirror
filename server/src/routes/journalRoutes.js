@@ -8,15 +8,20 @@ const {
     updateEntry,
     retryReflection,
     deleteEntry,
+    getSearchResults
 } = require("../controllers/journalController");
 
 router.use(protect); // every route below requires authentication
 
-router.post("/:id/reflect", retryReflection);
+
+router.get("/search",getSearchResults);
+
 router.post("/", createEntry);
 router.get("/", getEntries);
-router.get("/:id", getEntryById);
 router.put("/:id", updateEntry);
 router.delete("/:id", deleteEntry);
+router.get("/:id", getEntryById);
+
+router.post("/:id/reflect", retryReflection);
 
 module.exports = router;
