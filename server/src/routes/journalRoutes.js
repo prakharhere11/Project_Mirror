@@ -2,15 +2,17 @@ const express = require("express");
 const router = express.Router();
 const protect = require("../middleware/authMiddleware");
 const {
-  createEntry,
-  getEntries,
-  getEntryById,
-  updateEntry,
-  deleteEntry,
+    createEntry,
+    getEntries,
+    getEntryById,
+    updateEntry,
+    retryReflection,
+    deleteEntry,
 } = require("../controllers/journalController");
 
 router.use(protect); // every route below requires authentication
 
+router.post("/:id/reflect", retryReflection);
 router.post("/", createEntry);
 router.get("/", getEntries);
 router.get("/:id", getEntryById);

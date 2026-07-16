@@ -1,5 +1,9 @@
+const { generateReflection } = require("../services/aiService");
 const JournalEntry = require("../models/JournalEntry");
 
+// @desc    Create Journal Entry
+// @route   POST /api/journals
+// @access  Private
 // @desc    Create Journal Entry
 // @route   POST /api/journals
 // @access  Private
@@ -24,16 +28,50 @@ const createEntry = async (req, res) => {
             });
         }
 
+        // Step 1: Save journal entry
         const entry = await JournalEntry.create({
             userId: req.user._id,
             content,
         });
 
-        return res.status(201).json({
+        // Step 2: Respond immediately
+        res.status(201).json({
             success: true,
             message: "Journal created successfully",
             entry,
         });
+
+        // Step 3: Generate AI reflection in background
+        generateReflection(content)
+            .then(async (reflection) => {
+
+                await JournalEntry.findByIdAndUpdate(entry._id, {
+                    reflection: {
+                        status: "ready",
+                        summary: reflection.summary,
+                        emotions: reflection.emotions,
+                        reflectionQuestions: reflection.reflectionQuestions,
+                        positiveObservation: reflection.positiveObservation,
+                        suggestion: reflection.suggestion,
+                        generatedAt: new Date(),
+                    },
+                });
+
+                console.log(`Reflection generated for journal ${entry._id}`);
+
+            })
+            .catch(async (err) => {
+
+                console.error(
+                    `Reflection generation failed for journal ${entry._id}:`,
+                    err.message
+                );
+
+                await JournalEntry.findByIdAndUpdate(entry._id, {
+                    "reflection.status": "failed",
+                });
+
+            });
 
     } catch (error) {
 
@@ -202,6 +240,82 @@ const updateEntry = async (req, res) => {
     }
 };
 
+// @desc    Retry AI Reflection
+// @route   POST /api/journals/:id/reflect
+// @access  Private
+const retryReflection = async (req, res) => {
+    try {
+
+        const entry = await JournalEntry.findOne({
+            _id: req.params.id,
+            userId: req.user._id,
+        });
+
+        if (!entry) {
+            return res.status(404).json({
+                success: false,
+                message: "Journal entry not found",
+            });
+        }
+
+        // Already generated
+        if (entry.reflection.status === "ready") {
+            return res.status(400).json({
+                success: false,
+                message: "Reflection already exists.",
+            });
+        }
+
+        // Mark as pending
+        entry.reflection.status = "pending";
+        await entry.save();
+
+        try {
+
+            const reflection = await generateReflection(entry.content);
+
+            entry.reflection = {
+                status: "ready",
+                summary: reflection.summary,
+                emotions: reflection.emotions,
+                reflectionQuestions: reflection.reflectionQuestions,
+                positiveObservation: reflection.positiveObservation,
+                suggestion: reflection.suggestion,
+                generatedAt: new Date(),
+            };
+
+            await entry.save();
+
+            return res.status(200).json({
+                success: true,
+                message: "Reflection generated successfully.",
+                entry,
+            });
+
+        } catch (aiError) {
+
+            entry.reflection.status = "failed";
+            await entry.save();
+
+            return res.status(502).json({
+                success: false,
+                message: aiError.message,
+            });
+
+        }
+
+    } catch (error) {
+
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+
+    }
+};
+
 // @desc    Delete Journal Entry
 // @route   DELETE /api/journals/:id
 // @access  Private
@@ -243,5 +357,6 @@ module.exports = {
     getEntries,
     getEntryById,
     updateEntry,
+    retryReflection,
     deleteEntry,
 };
