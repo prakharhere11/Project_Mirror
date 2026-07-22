@@ -39,9 +39,10 @@ function LoginPage() {
             <form onSubmit={handleSubmit}>
 
                 <div>
-                    <label>Email</label>
-                    <br />
+                   <label htmlFor="email">Email</label>
+
                     <input
+                        id="email"
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
@@ -52,7 +53,7 @@ function LoginPage() {
                 <br />
 
                 <div>
-                    <label>Password</label>
+                    <label htmlFor="password">Password</label>
                     <br />
                     <input
                         type="password"

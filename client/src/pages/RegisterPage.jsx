@@ -40,7 +40,7 @@ function RegisterPage() {
             <form onSubmit={handleSubmit}>
 
                 <div>
-                    <label>Name</label>
+                    <label htmlFor="name">Name</label>
                     <br />
                     <input
                         type="text"
@@ -53,7 +53,7 @@ function RegisterPage() {
                 <br />
 
                 <div>
-                    <label>Email</label>
+                    <label htmlFor="email">Email</label>
                     <br />
                     <input
                         type="email"
@@ -66,7 +66,7 @@ function RegisterPage() {
                 <br />
 
                 <div>
-                    <label>Password</label>
+                    <label htmlFor="password">Password</label>
                     <br />
                     <input
                         type="password"
