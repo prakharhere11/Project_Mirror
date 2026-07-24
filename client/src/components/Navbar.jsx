@@ -55,6 +55,9 @@ function Navbar() {
                         <SquarePen size={18} />
                         New Entry
                     </Link>
+                    <Link to="/search">
+                        Search
+                    </Link>
 
                     <Link
                         to="/profile"
