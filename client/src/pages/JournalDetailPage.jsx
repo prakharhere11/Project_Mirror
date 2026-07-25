@@ -35,25 +35,50 @@ function JournalDetailPage() {
     const [isEditing, setIsEditing] = useState(false);
     const [content, setContent] = useState("");
 
-    useEffect(() => {
-        const fetchJournal = async () => {
-            try {
-                const data = await getJournalById(id);
+    // Effect 1: fetch the journal on mount (or when id changes)
+useEffect(() => {
+    const fetchJournal = async () => {
+        try {
+            const data = await getJournalById(id);
+            setJournal(data.entry);
+            setContent(data.entry.content);
+        } catch (err) {
+            setError(
+                err.response?.data?.message || "Failed to load journal."
+            );
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    fetchJournal();
+}, [id]);
+
+// Effect 2: poll only while reflection is pending
+useEffect(() => {
+    if (!journal || journal.reflection?.status !== "pending") return;
+
+    let attempts = 0;
+    const MAX_ATTEMPTS = 15;
+
+    const intervalId = setInterval(async () => {
+        attempts++;
+        try {
+            const data = await getJournalById(id);
+            if (data.entry.reflection?.status !== "pending") {
                 setJournal(data.entry);
-                setContent(data.entry.content);
-            } catch (err) {
-                setError(
-                    err.response?.data?.message ||
-                        "Failed to load journal."
-                );
-            } finally {
-                setLoading(false);
+                clearInterval(intervalId);
             }
-        };
+        } catch (err) {
+            clearInterval(intervalId);
+        }
+        if (attempts >= MAX_ATTEMPTS) {
+            clearInterval(intervalId);
+        }
+    }, 3000);
 
-        fetchJournal();
-    }, [id]);
+    return () => clearInterval(intervalId);
+}, [journal?.reflection?.status, id]);
 
     const handleUpdate = async () => {
         if (!content.trim()) {
@@ -101,16 +126,16 @@ function JournalDetailPage() {
 
     if (error) {
     return (
-        <Layout>
+        <>
             <h2 className="text-center text-red-500 text-xl">
                 {error}
             </h2>
-        </Layout>
+        </>
     );
 }
 
     return (
-        <Layout>
+        <>
 
                     <Card className="p-8">
 
@@ -332,7 +357,7 @@ function JournalDetailPage() {
             }}
         />
 
-        </Layout>
+        </>
     );
 }
 

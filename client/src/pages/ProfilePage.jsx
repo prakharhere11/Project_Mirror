@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import {Mail, CalendarDays} from "lucide-react";
 import { toast } from "react-toastify";
 
-import Layout from "../layout/Layout";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -77,19 +76,19 @@ function ProfilePage() {
     if (loading) return <LoadingSpinner />;
     if (!profile) {
     return (
-        <Layout>
+        <>
             <div className="text-center py-20">
                 <h2 className="text-2xl font-semibold text-red-500">
                     Failed to load profile.
                 </h2>
             </div>
-        </Layout>
+        </>
     );
 }
 
     return (
 
-        <Layout>
+        <>
 
             <div className="max-w-4xl mx-auto">
 
@@ -224,7 +223,7 @@ function ProfilePage() {
 
             </div>
 
-        </Layout>
+        </>
 
     );
 

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Search } from "lucide-react";
 import { toast } from "react-toastify";
-import Layout from "../components/Layout";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -53,7 +52,7 @@ setResults(data.entries || []);
 
     return (
 
-            <Layout>
+            <>
 
             <div className="max-w-5xl mx-auto">
 
@@ -143,7 +142,7 @@ setResults(data.entries || []);
             </div>
 
         
-                </Layout>
+                </>
     );
 
 }

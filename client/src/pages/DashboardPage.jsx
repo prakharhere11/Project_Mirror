@@ -45,16 +45,16 @@ function DashboardPage() {
 
     if (error) {
     return (
-        <Layout>
+        <>
             <h2 className="text-red-500 text-center text-xl">
                 {error}
             </h2>
-        </Layout>
+        </>
     );
 }
 
     return (
-        <Layout>
+        <>
 
                     {/* Header */}
 
@@ -222,7 +222,7 @@ function DashboardPage() {
 
                     </Card>
 
-                    </Layout>
+                    </>
     );
 }
 

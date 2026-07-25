@@ -45,16 +45,16 @@ function JournalListPage() {
 
     if (error) {
         return (
-            <Layout>
+            <>
                 <h2 className="text-center text-red-500 text-xl">
                     {error}
                 </h2>
-            </Layout>
+            </>
         );
     }
 
     return (
-        <Layout>
+        <>
 
             {/* Header */}
 
@@ -110,26 +110,20 @@ function JournalListPage() {
                                         ).toLocaleDateString()}
                                     </h2>
 
-                                    {journal.reflection?.status === "ready" && (
-                                        <span className="flex items-center gap-2 text-green-600 font-medium">
-                                            <CircleCheckBig size={18} />
+                                    {journals.reflection?.status === "ready" && (
+                                        <span className="text-green-600 font-medium">
                                             Ready
                                         </span>
                                     )}
 
-                                    {journal.reflection?.status === "pending" && (
-                                        <span className="flex items-center gap-2 text-yellow-600 font-medium">
-                                            <LoaderCircle
-                                                size={18}
-                                                className="animate-spin"
-                                            />
+                                    {journals.reflection?.status === "pending" && (
+                                        <span className="text-yellow-600 font-medium">
                                             Pending
                                         </span>
                                     )}
 
-                                    {journal.reflection?.status === "failed" && (
-                                        <span className="flex items-center gap-2 text-red-600 font-medium">
-                                            <CircleAlert size={18} />
+                                    {journals.reflection?.status === "failed" && (
+                                        <span className="text-red-600 font-medium">
                                             Failed
                                         </span>
                                     )}
@@ -150,7 +144,7 @@ function JournalListPage() {
 
             )}
 
-        </Layout>
+        </>
     );
 }
 
