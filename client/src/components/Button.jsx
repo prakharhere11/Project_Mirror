@@ -1,32 +1,11 @@
-function Button({
-    children,
-    type = "button",
-    onClick,
-    disabled = false,
-    className = "",
-}) {
+function Button({ children, className = "", ...props }) {
     return (
         <button
-            type={type}
-            onClick={onClick}
-            disabled={disabled}
-            className={`
-                inline-flex items-center justify-center gap-2
-                px-5 py-3
-                rounded-xl
-                bg-indigo-600
-                hover:bg-indigo-700
-                text-white
-                font-medium
-                transition
-                disabled:opacity-50
-                disabled:cursor-not-allowed
-                ${className}
-            `}
+            className={`inline-flex items-center justify-center gap-2 bg-ink text-white text-sm font-medium px-5 py-2.5 rounded-xl hover:bg-ink/90 transition disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+            {...props}
         >
             {children}
         </button>
     );
 }
-
 export default Button;

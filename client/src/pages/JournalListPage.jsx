@@ -1,19 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-    BookOpen,
-    CircleCheckBig,
-    LoaderCircle,
-    CircleAlert,
-    SquarePen,
-} from "lucide-react";
+import { BookOpen, Plus } from "lucide-react";
 
-import Layout from "../layout/Layout";
-import LoadingSpinner from "../components/LoadingSpinner";
-import EmptyState from "../components/EmptyState";
 import Card from "../components/Card";
 import Button from "../components/Button";
-
+import Badge from "../components/Badge";
+import LoadingSpinner from "../components/LoadingSpinner";
 import { getAllJournals } from "../api/journalService";
 
 function JournalListPage() {
@@ -25,126 +17,82 @@ function JournalListPage() {
         const fetchJournals = async () => {
             try {
                 const data = await getAllJournals();
-                setJournals(data.entries || []);
+                setJournals(Array.isArray(data.entries) ? data.entries : []);
             } catch (err) {
-                setError(
-                    err.response?.data?.message ||
-                    "Failed to load journals."
-                );
+                setError(err.response?.data?.message || "Failed to load journals.");
             } finally {
                 setLoading(false);
             }
         };
-
         fetchJournals();
     }, []);
 
-    if (loading) {
-        return <LoadingSpinner />;
-    }
+    if (loading) return <LoadingSpinner />;
 
     if (error) {
         return (
-            <>
-                <h2 className="text-center text-red-500 text-xl">
-                    {error}
-                </h2>
-            </>
+            <Card className="text-center py-16">
+                <p className="text-rose mb-4">{error}</p>
+                <Button onClick={() => window.location.reload()}>Retry</Button>
+            </Card>
         );
     }
 
     return (
-        <>
-
-            {/* Header */}
-
-            <div className="flex justify-between items-center mb-8">
-
+        <div>
+            <div className="flex items-center justify-between mb-10">
                 <div>
-                    <h1 className="text-4xl font-bold text-slate-800">
-                        My Journals
-                    </h1>
-
-                    <p className="text-slate-500 mt-2">
-                        Reflect, revisit and grow.
+                    <h1 className="font-display text-4xl text-ink">Your Entries</h1>
+                    <p className="text-ink-soft mt-2">
+                        {journals.length} reflection{journals.length !== 1 ? "s" : ""} written so far.
                     </p>
                 </div>
-
                 <Link to="/journals/new">
-                    <Button className="flex items-center gap-2">
-                        <SquarePen size={18} />
+                    <Button>
+                        <Plus size={16} />
                         New Entry
                     </Button>
                 </Link>
-
             </div>
 
             {journals.length === 0 ? (
-
-                <EmptyState
-                    icon={<BookOpen size={70} className="text-slate-300" />}
-                    title="No Journal Entries Yet"
-                    description="Begin your self-reflection journey today."
-                    buttonText="Create First Entry"
-                    buttonLink="/journals/new"
-                />
-
+                <Card className="text-center py-20">
+                    <BookOpen size={40} className="mx-auto text-ink-soft mb-4" />
+                    <h3 className="font-display text-xl mb-2">No journal entries yet</h3>
+                    <p className="text-ink-soft mb-6">Start writing your first reflection.</p>
+                    <Link to="/journals/new">
+                        <Button>Write your first entry</Button>
+                    </Link>
+                </Card>
             ) : (
-
-                <div className="grid gap-6">
-
-                    {journals.map((journal) => (
-
-                        <Link
-                            key={journal._id}
-                            to={`/journals/${journal._id}`}
-                        >
-
-                            <Card className="hover:shadow-xl hover:-translate-y-1 transition cursor-pointer">
-
-                                <div className="flex justify-between items-center">
-
-                                    <h2 className="font-bold text-lg">
-                                        {new Date(
-                                            journal.createdAt
-                                        ).toLocaleDateString()}
-                                    </h2>
-
-                                    {journals.reflection?.status === "ready" && (
-                                        <span className="text-green-600 font-medium">
-                                            Ready
-                                        </span>
-                                    )}
-
-                                    {journals.reflection?.status === "pending" && (
-                                        <span className="text-yellow-600 font-medium">
-                                            Pending
-                                        </span>
-                                    )}
-
-                                    {journals.reflection?.status === "failed" && (
-                                        <span className="text-red-600 font-medium">
-                                            Failed
-                                        </span>
-                                    )}
-
-                                </div>
-
-                                <p className="text-slate-600 mt-4 line-clamp-3">
-                                    {journal.content}
-                                </p>
-
-                            </Card>
-
-                        </Link>
-
-                    ))}
-
+                <div className="flex flex-col gap-4">
+                    {journals.map((journal) => {
+                        const status = journal.reflection?.status || "pending";
+                        return (
+                            <Link key={journal._id} to={`/journals/${journal._id}`}>
+                                <Card className="hover:shadow-md transition">
+                                    <div className="flex items-start justify-between gap-6">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs text-ink-soft uppercase tracking-wide mb-2">
+                                                {new Date(journal.createdAt).toLocaleDateString(undefined, {
+                                                    weekday: "long", month: "short", day: "numeric", year: "numeric"
+                                                })}
+                                            </p>
+                                            <p className="text-ink leading-relaxed line-clamp-2">
+                                                {journal.content}
+                                            </p>
+                                        </div>
+                                        <Badge tone={status === "ready" ? "ready" : status === "failed" ? "failed" : "pending"}>
+                                            {status.charAt(0).toUpperCase() + status.slice(1)}
+                                        </Badge>
+                                    </div>
+                                </Card>
+                            </Link>
+                        );
+                    })}
                 </div>
-
             )}
-
-        </>
+        </div>
     );
 }
 

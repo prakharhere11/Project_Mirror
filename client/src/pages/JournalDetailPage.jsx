@@ -1,27 +1,29 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import Card from "../components/Card";
-import ConfirmModal from "../components/ConfirmModal";
 import {
+    ArrowLeft,
     CalendarDays,
     Pencil,
     Trash2,
     Save,
     X,
-    CircleCheckBig,
-    LoaderCircle,
-    CircleAlert,
 } from "lucide-react";
 
-import Layout from "../layout/Layout";
+import Card from "../components/Card";
+import Button from "../components/Button";
+import Badge from "../components/Badge";
+import ConfirmModal from "../components/ConfirmModal";
 import LoadingSpinner from "../components/LoadingSpinner";
-import Button from "../components/Button";import {
-    getJournalById,
-    updateJournal,
-    deleteJournal,
-} from "../api/journalService";
-
+import { getJournalById, updateJournal, deleteJournal } from "../api/journalService";
 import { toast } from "react-toastify";
+
+const categoryStyles = {
+    summary: { label: "Summary", text: "text-accent" },
+    emotions: { label: "Emotions", text: "text-rose" },
+    positiveObservation: { label: "Positive Observation", text: "text-sage" },
+    reflectionQuestions: { label: "Reflection Questions", text: "text-clay" },
+    suggestion: { label: "Actionable Suggestion", text: "text-denim" },
+};
 
 function JournalDetailPage() {
     const { id } = useParams();
@@ -31,333 +33,231 @@ function JournalDetailPage() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-
     const [isEditing, setIsEditing] = useState(false);
     const [content, setContent] = useState("");
 
-    // Effect 1: fetch the journal on mount (or when id changes)
-useEffect(() => {
-    const fetchJournal = async () => {
-        try {
-            const data = await getJournalById(id);
-            setJournal(data.entry);
-            setContent(data.entry.content);
-        } catch (err) {
-            setError(
-                err.response?.data?.message || "Failed to load journal."
-            );
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    fetchJournal();
-}, [id]);
-
-// Effect 2: poll only while reflection is pending
-useEffect(() => {
-    if (!journal || journal.reflection?.status !== "pending") return;
-
-    let attempts = 0;
-    const MAX_ATTEMPTS = 15;
-
-    const intervalId = setInterval(async () => {
-        attempts++;
-        try {
-            const data = await getJournalById(id);
-            if (data.entry.reflection?.status !== "pending") {
+    useEffect(() => {
+        const fetchJournal = async () => {
+            try {
+                const data = await getJournalById(id);
                 setJournal(data.entry);
+                setContent(data.entry.content);
+            } catch (err) {
+                setError(err.response?.data?.message || "Failed to load journal.");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchJournal();
+    }, [id]);
+
+    useEffect(() => {
+        if (!journal || journal.reflection?.status !== "pending") return;
+        let attempts = 0;
+        const MAX_ATTEMPTS = 15;
+        const intervalId = setInterval(async () => {
+            attempts++;
+            try {
+                const data = await getJournalById(id);
+                if (data.entry.reflection?.status !== "pending") {
+                    setJournal(data.entry);
+                    clearInterval(intervalId);
+                }
+            } catch {
                 clearInterval(intervalId);
             }
-        } catch (err) {
-            clearInterval(intervalId);
-        }
-        if (attempts >= MAX_ATTEMPTS) {
-            clearInterval(intervalId);
-        }
-    }, 3000);
-
-    return () => clearInterval(intervalId);
-}, [journal?.reflection?.status, id]);
+            if (attempts >= MAX_ATTEMPTS) clearInterval(intervalId);
+        }, 3000);
+        return () => clearInterval(intervalId);
+    }, [journal?.reflection?.status, id]);
 
     const handleUpdate = async () => {
         if (!content.trim()) {
             toast.error("Journal cannot be empty.");
             return;
         }
-
         try {
-            const response = await updateJournal(id, {
-                content,
-            });
-
+            const response = await updateJournal(id, { content });
             setJournal(response.entry);
             setContent(response.entry.content);
-
             setIsEditing(false);
-
-            toast.success("Journal updated successfully.");
+            toast.success("Journal updated.");
         } catch (err) {
-            toast.error(
-                err.response?.data?.message ||
-                    "Failed to update journal."
-            );
+            toast.error(err.response?.data?.message || "Failed to update journal.");
         }
     };
 
     const handleDelete = async () => {
-    try {
-        await deleteJournal(id);
+        try {
+            await deleteJournal(id);
+            toast.success("Journal deleted.");
+            navigate("/journals");
+        } catch (err) {
+            toast.error(err.response?.data?.message || "Failed to delete journal.");
+        }
+    };
 
-        toast.success("Journal deleted.");
+    if (loading) return <LoadingSpinner />;
+    if (error) return <p className="text-rose text-center">{error}</p>;
+    if (!journal) return null;
 
-        navigate("/journals");
-    } catch (err) {
-        toast.error(
-            err.response?.data?.message ||
-            "Failed to delete journal."
-        );
-    }
-};
-
-    if (loading) {
-    return <LoadingSpinner />;
-}
-
-    if (error) {
-    return (
-        <>
-            <h2 className="text-center text-red-500 text-xl">
-                {error}
-            </h2>
-        </>
-    );
-}
+    const status = journal.reflection?.status || "pending";
+    const badgeTone = status === "ready" ? "ready" : status === "failed" ? "failed" : "pending";
 
     return (
-        <>
-
-                    <Card className="p-8">
-
-                        <h1 className="text-3xl font-bold mb-6">
-                            Journal Entry
-                        </h1>
-
-                        <div className="flex items-center gap-3 text-slate-500 mb-8">
-
-                            <CalendarDays size={20} />
-
-                            {new Date(
-                                journal.createdAt
-                            ).toLocaleString()}
-
-                        </div>
-
-                        <div className="mb-8">
-
-                            <h2 className="text-xl font-semibold mb-4">
-                                Content
-                            </h2>
-
-                            {isEditing ? (
-                                <textarea
-                                    rows={12}
-                                    value={content}
-                                    onChange={(e) =>
-                                        setContent(
-                                            e.target.value
-                                        )
-                                    }
-                                    className="w-full border rounded-xl p-4 focus:ring-2 focus:ring-indigo-500 outline-none"
-                                />
-                            ) : (
-                                <p className="leading-8 text-slate-700 whitespace-pre-wrap">
-                                    {journal.content}
-                                </p>
-                            )}
-
-                        </div>
-
-                        <div className="mb-8">
-
-                            <h2 className="text-xl font-semibold mb-4">
-                                Reflection Status
-                            </h2>
-
-                            {journal.reflection?.status ===
-                                "ready" && (
-                                <span className="flex items-center gap-2 text-green-600 font-semibold">
-                                    <CircleCheckBig />
-                                    Ready
-                                </span>
-                            )}
-
-                            {journal.reflection?.status ===
-                                "pending" && (
-                                <span className="flex items-center gap-2 text-yellow-600 font-semibold">
-                                    <LoaderCircle className="animate-spin" />
-                                    Pending
-                                </span>
-                            )}
-
-                            {journal.reflection?.status ===
-                                "failed" && (
-                                <span className="flex items-center gap-2 text-red-600 font-semibold">
-                                    <CircleAlert />
-                                    Failed
-                                </span>
-                            )}
-
-                        </div>
-                        <Card className="mt-8">
-
-    <h2 className="text-2xl font-bold mb-6">
-        AI Reflection
-    </h2>
-
-    {journal.reflection?.status !== "ready" ? (
-
-        <p className="text-slate-500">
-            Reflection is not available yet.
-        </p>
-
-    ) : (
-
-        <div className="space-y-6">
-
-            <div>
-                <h3 className="font-semibold text-indigo-600">
-                    Summary
-                </h3>
-
-                <p className="mt-2">
-                    {journal.reflection.summary}
-                </p>
-            </div>
-
-            <div>
-                <h3 className="font-semibold text-pink-600">
-                    Emotions
-                </h3>
-
-                <div className="flex flex-wrap gap-2 mt-2">
-
-                    {journal.reflection.emotions.map((emotion) => (
-
-                        <span
-                            key={emotion}
-                            className="bg-pink-100 text-pink-700 px-3 py-1 rounded-full text-sm"
-                        >
-                            {emotion}
+        <div>
+            {/* Top bar: back button + breadcrumb + status */}
+            <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="w-9 h-9 flex items-center justify-center rounded-full border border-line hover:bg-surface transition"
+                        aria-label="Go back"
+                    >
+                        <ArrowLeft size={18} />
+                    </button>
+                    <div className="flex items-center gap-2 text-sm text-ink-soft">
+                        <span>Journal Entry</span>
+                        <span>/</span>
+                        <span className="text-ink font-medium">
+                            {new Date(journal.createdAt).toLocaleDateString(undefined, {
+                                month: "long", day: "numeric", year: "numeric"
+                            })}
                         </span>
-
-                    ))}
-
+                    </div>
                 </div>
+                <Badge tone={badgeTone}>
+                    {status === "ready" ? "Reflection Ready" : status === "failed" ? "Reflection Failed" : "Reflecting..."}
+                </Badge>
             </div>
 
-            <div>
-                <h3 className="font-semibold text-green-600">
-                    Positive Observation
-                </h3>
+            <div className="grid lg:grid-cols-[1fr_380px] gap-8 items-start">
+                {/* Left: journal content */}
+                <Card className="p-8">
+                    <div className="flex items-center gap-2 text-xs text-ink-soft uppercase tracking-widest mb-6">
+                        <CalendarDays size={14} />
+                        {new Date(journal.createdAt).toLocaleString(undefined, {
+                            weekday: "long", hour: "numeric", minute: "2-digit"
+                        })}
+                    </div>
 
-                <p className="mt-2">
-                    {journal.reflection.positiveObservation}
-                </p>
-            </div>
+                    {isEditing ? (
+                        <textarea
+                            rows={14}
+                            value={content}
+                            onChange={(e) => setContent(e.target.value)}
+                            className="w-full border border-line rounded-xl p-4 text-ink leading-relaxed focus:ring-2 focus:ring-accent outline-none"
+                        />
+                    ) : (
+                        <p className="text-ink leading-8 whitespace-pre-wrap">
+                            {journal.content}
+                        </p>
+                    )}
 
-            <div>
-                <h3 className="font-semibold text-orange-600">
-                    Reflection Questions
-                </h3>
-
-                <ul className="list-disc ml-6 mt-2 space-y-2">
-
-                    {journal.reflection.reflectionQuestions.map((question) => (
-
-                        <li key={question}>
-                            {question}
-                        </li>
-
-                    ))}
-
-                </ul>
-            </div>
-
-            <div>
-                <h3 className="font-semibold text-blue-600">
-                    Actionable Suggestion
-                </h3>
-
-                <p className="mt-2">
-                    {journal.reflection.suggestion}
-                </p>
-            </div>
-
-        </div>
-
-    )}
-
-</Card>
-
-                        <div className="flex gap-4 flex-wrap">
-
-                            {isEditing ? (
-                                <>
-                                    <Button
-                                            onClick={handleUpdate}
-                                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-                                        >
-                                            <Save size={18} />
-                                            Save Changes
-                                        </Button>
-
-                                    <Button
-                                        onClick={() => {
-                                            setContent(journal.content);
-                                            setIsEditing(false);
-                                        }}
-                                        className="flex items-center gap-2 bg-slate-500 hover:bg-slate-600"
-                                    >
-                                        <X size={18} />
-                                        Cancel
-                                    </Button>
-                                </>
-                            ) : (
+                    <div className="flex gap-3 flex-wrap mt-10 pt-6 border-t border-line">
+                        {isEditing ? (
+                            <>
+                                <Button onClick={handleUpdate}>
+                                    <Save size={16} /> Save Changes
+                                </Button>
                                 <Button
-                                        onClick={() => setIsEditing(true)}
-                                        className="flex items-center gap-2"
-                                    >
-                                        <Pencil size={18} />
-                                        Edit Journal
-                                    </Button>
-                            )}
-
-                            <Button
-                                onClick={() => setShowDeleteModal(true)}
-                                className="flex items-center gap-2 bg-red-600 hover:bg-red-700"
-                            >
-                                <Trash2 size={18} />
-                                Delete
+                                    onClick={() => { setContent(journal.content); setIsEditing(false); }}
+                                    className="bg-surface text-ink border border-line hover:bg-canvas"
+                                >
+                                    <X size={16} /> Cancel
+                                </Button>
+                            </>
+                        ) : (
+                            <Button onClick={() => setIsEditing(true)}>
+                                <Pencil size={16} /> Edit Entry
                             </Button>
+                        )}
+                        <Button
+                            onClick={() => setShowDeleteModal(true)}
+                            className="bg-surface text-rose border border-rose-soft hover:bg-rose-soft"
+                        >
+                            <Trash2 size={16} /> Delete
+                        </Button>
+                    </div>
+                </Card>
 
+                {/* Right: AI reflection panel */}
+                <Card className="p-6 lg:sticky lg:top-10">
+                    <h2 className="font-display text-xl mb-6">AI Reflection</h2>
+
+                    {status !== "ready" ? (
+                        <p className="text-sm text-ink-soft">
+                            {status === "pending"
+                                ? "Reading through your entry..."
+                                : "Reflection couldn't be generated. You can try again from the entry list."}
+                        </p>
+                    ) : (
+                        <div className="space-y-7">
+                            <div>
+                                <p className={`text-xs font-semibold uppercase tracking-wide mb-2 ${categoryStyles.summary.text}`}>
+                                    Summary
+                                </p>
+                                <p className="font-display italic text-ink leading-relaxed">
+                                    "{journal.reflection.summary}"
+                                </p>
+                            </div>
+
+                            <div>
+                                <p className={`text-xs font-semibold uppercase tracking-wide mb-2 ${categoryStyles.emotions.text}`}>
+                                    Emotions
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                    {journal.reflection.emotions.map((emotion) => (
+                                        <span key={emotion} className="bg-rose-soft text-rose text-xs px-3 py-1 rounded-full">
+                                            {emotion}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <p className={`text-xs font-semibold uppercase tracking-wide mb-2 ${categoryStyles.positiveObservation.text}`}>
+                                    Positive Observation
+                                </p>
+                                <p className="text-sm text-ink leading-relaxed">
+                                    {journal.reflection.positiveObservation}
+                                </p>
+                            </div>
+
+                            <div>
+                                <p className={`text-xs font-semibold uppercase tracking-wide mb-2 ${categoryStyles.reflectionQuestions.text}`}>
+                                    Reflection Questions
+                                </p>
+                                <ul className="space-y-3">
+                                    {journal.reflection.reflectionQuestions.map((q) => (
+                                        <li key={q} className="text-sm text-ink leading-relaxed border-l-2 border-clay-soft pl-3">
+                                            {q}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            <div>
+                                <p className={`text-xs font-semibold uppercase tracking-wide mb-2 ${categoryStyles.suggestion.text}`}>
+                                    Actionable Suggestion
+                                </p>
+                                <p className="text-sm text-ink leading-relaxed">
+                                    {journal.reflection.suggestion}
+                                </p>
+                            </div>
                         </div>
+                    )}
+                </Card>
+            </div>
 
-                    </Card>
-
-                
             <ConfirmModal
-            isOpen={showDeleteModal}
-            title="Delete Journal"
-            message="This action cannot be undone."
-            onCancel={() => setShowDeleteModal(false)}
-            onConfirm={() => {
-                setShowDeleteModal(false);
-                handleDelete();
-            }}
-        />
-
-        </>
+                isOpen={showDeleteModal}
+                title="Delete Journal"
+                message="This action cannot be undone."
+                onCancel={() => setShowDeleteModal(false)}
+                onConfirm={() => { setShowDeleteModal(false); handleDelete(); }}
+            />
+        </div>
     );
 }
 

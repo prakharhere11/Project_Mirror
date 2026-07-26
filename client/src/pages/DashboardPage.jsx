@@ -1,23 +1,17 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-    BookOpen,
-    Flame,
-    SquarePen,
-    ArrowRight,
-} from "lucide-react";
-import Button from "../components/Button";
+import { BookOpen, Flame, Plus, ArrowRight } from "lucide-react";
 
-import Layout from "../layout/Layout";
-import LoadingSpinner from "../components/LoadingSpinner";
 import Card from "../components/Card";
-
+import Button from "../components/Button";
+import Badge from "../components/Badge";
+import LoadingSpinner from "../components/LoadingSpinner";
+import { useAuth } from "../context/AuthContext";
 import { getDashboardSummary } from "../api/dashboardService";
 
-
 function DashboardPage() {
+    const { user } = useAuth();
     const [summary, setSummary] = useState(null);
-
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
@@ -27,202 +21,107 @@ function DashboardPage() {
                 const data = await getDashboardSummary();
                 setSummary(data);
             } catch (err) {
-                setError(
-                    err.response?.data?.message ||
-                    "Failed to load dashboard."
-                );
+                setError(err.response?.data?.message || "Failed to load dashboard.");
             } finally {
                 setLoading(false);
             }
         };
-
         fetchDashboard();
     }, []);
 
-    if (loading) {
-    return <LoadingSpinner />;
-}
+    if (loading) return <LoadingSpinner />;
+    if (error) return <p className="text-rose text-center">{error}</p>;
+    if (!summary) return null;
 
-    if (error) {
-    return (
-        <>
-            <h2 className="text-red-500 text-center text-xl">
-                {error}
-            </h2>
-        </>
-    );
-}
+    const firstName = user?.name?.split(" ")[0] || "there";
 
     return (
-        <>
+        <div>
+            <div className="flex justify-between items-start mb-10">
+                <div>
+                    <h1 className="font-display text-4xl text-ink">
+                        Welcome back, {firstName}.
+                    </h1>
+                    <p className="text-ink-soft mt-2">
+                        The clarity you seek is found within. Your thoughts are ready for exploration.
+                    </p>
+                </div>
 
-                    {/* Header */}
-
-                    <div className="flex justify-between items-center mb-8">
-
-                        <div>
-                            <h1 className="text-4xl font-bold text-slate-800">
-                                Dashboard
-                            </h1>
-
-                            <p className="text-slate-500 mt-2">
-                                Welcome back. Here's your journaling progress.
-                            </p>
-                        </div>
-
-                        <Link to="/journals/new">
-                            <Button className="flex items-center gap-2">
-                                <SquarePen size={18} />
-                                New Entry
-                            </Button>
-                        </Link>
-
+                {summary.currentStreak > 0 && (
+                    <div className="text-right shrink-0">
+                        <p className="text-[11px] tracking-widest text-ink-soft uppercase mb-1">
+                            Writing Streak
+                        </p>
+                        <p className="font-display text-2xl flex items-center gap-2 justify-end">
+                            <Flame className="text-clay" size={22} />
+                            {summary.currentStreak} Day{summary.currentStreak !== 1 ? "s" : ""}
+                        </p>
                     </div>
+                )}
+            </div>
 
-                    {/* Stats */}
-
-                    <div className="grid md:grid-cols-2 gap-6 mb-10">
-
-                        <Card>
-
-                            <div className="flex items-center gap-3">
-
-                                <BookOpen
-                                    className="text-indigo-600"
-                                    size={30}
-                                />
-
-                                <div>
-                                    <p className="text-slate-500">
-                                        Total Entries
-                                    </p>
-
-                                    <h2 className="text-3xl font-bold">
-                                        {summary.totalEntries}
-                                    </h2>
-                                </div>
-
-                            </div>
-
-                        </Card>
-
-                        <Card>
-
-                            <div className="flex items-center gap-3">
-
-                                <Flame
-                                    className="text-orange-500"
-                                    size={30}
-                                />
-
-                                <div>
-
-                                    <p className="text-slate-500">
-                                        Current Streak
-                                    </p>
-
-                                    <h2 className="text-3xl font-bold">
-
-                                        {summary.currentStreak > 0
-                                            ? `${summary.currentStreak} Days 🔥`
-                                            : "Start Today ✨"}
-
-                                    </h2>
-
-                                </div>
-
-                            </div>
-
-                        </Card>
-
+            <Card className="flex items-center justify-between mb-10">
+                <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-xl bg-accent-soft flex items-center justify-center">
+                        <BookOpen className="text-accent" size={20} />
                     </div>
+                    <div>
+                        <p className="text-xs text-ink-soft uppercase tracking-wide">Total Entries</p>
+                        <p className="font-display text-2xl">{summary.totalEntries}</p>
+                    </div>
+                </div>
 
-                    {/* Recent Entries */}
+                <Link to="/journals/new">
+                    <Button>
+                        <Plus size={16} />
+                        Start New Entry
+                    </Button>
+                </Link>
+            </Card>
 
-                    <Card className="p-6">
+            <div className="flex items-center justify-between mb-5">
+                <h2 className="font-display text-2xl">Recent Reflections</h2>
+                <Link to="/journals" className="text-sm text-accent hover:underline flex items-center gap-1">
+                    View Archive <ArrowRight size={14} />
+                </Link>
+            </div>
 
-                        <div className="flex justify-between items-center mb-6">
-
-                            <h2 className="text-2xl font-semibold">
-                                Recent Entries
-                            </h2>
-
-                            <Link
-                                to="/journals"
-                                className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800"
-                            >
-                                View All
-                                <ArrowRight size={18} />
-                            </Link>
-
-                        </div>
-
-                        {summary.recentEntries.length === 0 ? (
-
-                            <div className="text-center py-16">
-
-                                <BookOpen
-                                    size={60}
-                                    className="mx-auto text-slate-300"
-                                />
-
-                                <h3 className="text-xl font-semibold mt-4">
-                                    No Journal Entries Yet
-                                </h3>
-
-                                <p className="text-slate-500 mt-2">
-                                    Start writing your first journal today.
-                                </p>
-
-                                <Link to="/journals/new">
-                                    <Button className="mt-6">
-                                        Create First Entry
-                                    </Button>
-                                </Link>
-
-                            </div>
-
-                        ) : (
-
-                            <div className="space-y-5">
-
-                                {summary.recentEntries.map((entry) => (
-
-                                    <Link
-                                        key={entry._id}
-                                        to={`/journals/${entry._id}`}
-                                        className="block border rounded-xl p-5 hover:bg-slate-50 transition"
-                                    >
-
-                                        <div className="flex justify-between">
-
-                                            <h3 className="font-semibold text-lg">
-                                                {new Date(
-                                                    entry.createdAt
-                                                ).toLocaleDateString()}
-                                            </h3>
-
-                                            <span className="text-sm text-slate-400">
-                                                {entry.reflection?.status}
-                                            </span>
-
-                                        </div>
-
-                                        <p className="text-slate-600 mt-3 line-clamp-2">
-                                            {entry.content}
+            {summary.recentEntries.length === 0 ? (
+                <Card className="text-center py-16">
+                    <BookOpen size={40} className="mx-auto text-ink-soft mb-4" />
+                    <h3 className="font-display text-xl mb-2">No reflections yet</h3>
+                    <p className="text-ink-soft mb-6">Your first entry is a page away.</p>
+                    <Link to="/journals/new">
+                        <Button>Write your first entry</Button>
+                    </Link>
+                </Card>
+            ) : (
+                <div className="grid md:grid-cols-3 gap-5">
+                    {summary.recentEntries.map((entry) => {
+                        const status = entry.reflection?.status || "pending";
+                        return (
+                            <Link key={entry._id} to={`/journals/${entry._id}`}>
+                                <Card className="h-full hover:shadow-md transition flex flex-col">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <p className="text-xs text-ink-soft">
+                                            {new Date(entry.createdAt).toLocaleDateString(undefined, {
+                                                month: "short", day: "numeric", year: "numeric"
+                                            })}
                                         </p>
-
-                                    </Link>
-
-                                ))}
-
-                            </div>
-
-                        )}
-
-                    </Card>
-
-                    </>
+                                        <Badge tone={status === "ready" ? "ready" : status === "failed" ? "failed" : "pending"}>
+                                            {status.charAt(0).toUpperCase() + status.slice(1)}
+                                        </Badge>
+                                    </div>
+                                    <p className="text-ink text-sm leading-relaxed line-clamp-3">
+                                        {entry.content}
+                                    </p>
+                                </Card>
+                            </Link>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
     );
 }
 
