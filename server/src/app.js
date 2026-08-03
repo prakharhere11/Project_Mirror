@@ -1,23 +1,35 @@
 const express = require("express");
 const cors = require("cors");
+
+const authRoutes = require("./routes/authRoutes");
 const journalRoutes = require("./routes/journalRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
-const authRoutes = require("./routes/authRoutes");
 const profileRoutes = require("./routes/profileRoutes");
+
 const app = express();
 
-app.use(cors());
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.CLIENT_URL,
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+}));
+
 app.use(express.json());
 
-// Health Check
 app.get("/", (req, res) => {
-    res.json({
-        success: true,
-        message: "Atlas API is running",
-    });
+    res.json({ success: true, message: "Atlas API is running" });
 });
 
-// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/journals", journalRoutes);
 app.use("/api/dashboard", dashboardRoutes);
