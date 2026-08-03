@@ -14,7 +14,12 @@ import Button from "../components/Button";
 import Badge from "../components/Badge";
 import ConfirmModal from "../components/ConfirmModal";
 import LoadingSpinner from "../components/LoadingSpinner";
-import { getJournalById, updateJournal, deleteJournal } from "../api/journalService";
+import {
+    getJournalById,
+    updateJournal,
+    deleteJournal,
+    retryReflection,
+} from "../api/journalService";
 import { toast } from "react-toastify";
 
 const categoryStyles = {
@@ -35,6 +40,7 @@ function JournalDetailPage() {
     const [error, setError] = useState("");
     const [isEditing, setIsEditing] = useState(false);
     const [content, setContent] = useState("");
+    const [retrying, setRetrying] = useState(false);
 
     useEffect(() => {
         const fetchJournal = async () => {
@@ -96,6 +102,25 @@ function JournalDetailPage() {
             toast.error(err.response?.data?.message || "Failed to delete journal.");
         }
     };
+
+const handleRetry = async () => {
+    setRetrying(true);
+
+    try {
+        const response = await retryReflection(id);
+
+        setJournal(response.entry);
+
+        toast.success("Reflection generated successfully!");
+    } catch (err) {
+        toast.error(
+            err.response?.data?.message ||
+            "Failed to generate reflection."
+        );
+    } finally {
+        setRetrying(false);
+    }
+};
 
     if (loading) return <LoadingSpinner />;
     if (error) return <p className="text-rose text-center">{error}</p>;
@@ -185,14 +210,10 @@ function JournalDetailPage() {
                 <Card className="p-6 lg:sticky lg:top-10">
                     <h2 className="font-display text-xl mb-6">AI Reflection</h2>
 
-                    {status !== "ready" ? (
-                        <p className="text-sm text-ink-soft">
-                            {status === "pending"
-                                ? "Reading through your entry..."
-                                : "Reflection couldn't be generated. You can try again from the entry list."}
-                        </p>
-                    ) : (
-                        <div className="space-y-7">
+                    
+                    {status === "ready" ? (
+
+                    <div className="space-y-7">
                             <div>
                                 <p className={`text-xs font-semibold uppercase tracking-wide mb-2 ${categoryStyles.summary.text}`}>
                                     Summary
@@ -246,6 +267,29 @@ function JournalDetailPage() {
                                 </p>
                             </div>
                         </div>
+
+                ) : status === "failed" ? (
+
+                        <div className="space-y-4">
+                            <p className="text-sm text-rose">
+                                Reflection couldn't be generated.
+                                Please try again.
+                            </p>
+
+                            <Button
+                                onClick={handleRetry}
+                                disabled={retrying}
+                            >
+                                {retrying ? "Retrying..." : "Retry Reflection"}
+                            </Button>
+                        </div>
+
+                    ) : (
+
+                        <p className="text-sm text-ink-soft">
+                            Reading through your entry...
+                        </p>
+
                     )}
                 </Card>
             </div>

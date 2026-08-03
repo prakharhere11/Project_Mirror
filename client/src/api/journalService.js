@@ -20,13 +20,19 @@ export const updateJournal = async (id, journalData) => {
     return data;
 };
 
-
 export const deleteJournal = async (id) => {
     const { data } = await api.delete(`/journals/${id}`);
     return data;
-    
 };
+
 export const searchJournals = async (query) => {
-    const response = await api.get(`/journals/search?q=${encodeURIComponent(query)}`);
+    const response = await api.get(
+        `/journals/search?q=${encodeURIComponent(query)}`
+    );
     return response.data;
+};
+
+export const retryReflection = async (id) => {
+    const { data } = await api.post(`/journals/${id}/reflect`);
+    return data;
 };
