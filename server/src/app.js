@@ -7,6 +7,7 @@ const dashboardRoutes = require("./routes/dashboardRoutes");
 const profileRoutes = require("./routes/profileRoutes");
 
 const app = express();
+console.log("CLIENT_URL =", process.env.CLIENT_URL);
 
 const allowedOrigins = [
   "http://localhost:5173",
