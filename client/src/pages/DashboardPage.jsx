@@ -37,7 +37,7 @@ function DashboardPage() {
 
     return (
         <div>
-            <div className="flex justify-between items-start mb-10">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-8">
                 <div>
                     <h1 className="font-display text-4xl text-ink">
                         Welcome back, {firstName}.

@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-
+import LandingPage from "./pages/LandingPage";
 import Layout from "./layout/Layout";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -40,10 +40,9 @@ function App() {
 
 
             {/* Default Route */}
-            <Route
-                path="/"
-                element={<Navigate to="/dashboard" replace />}
-            />
+            <Route element={<PublicOnlyRoute />}>
+                <Route path="/" element={<LandingPage />} />
+            </Route>
 
             {/* Catch-all Route */}
             <Route
